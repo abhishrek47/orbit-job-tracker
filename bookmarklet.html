@@ -1,0 +1,253 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit — Bookmarklet Installer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f0eb; --surface: #fff; --navy: #1e3a5f; --navy-dark: #162d4a;
+  --border: #e0d8d0; --text: #1a1a1a; --muted: #888; --accent: #c0392b;
+  --font-head: 'Playfair Display', serif; --font-body: 'DM Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+}
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 20px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; max-width: 560px; width: 100%; box-shadow: 0 16px 48px rgba(30,58,95,.1); }
+
+.logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.logo-mark { width: 36px; height: 36px; background: var(--navy); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-style: italic; font-weight: 700; font-size: 15px; color: white; }
+.logo-name { font-family: var(--font-head); font-style: italic; font-size: 20px; font-weight: 700; color: var(--text); }
+
+h1 { font-family: var(--font-head); font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.subtitle { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
+
+.step { display: flex; gap: 14px; margin-bottom: 22px; align-items: flex-start; }
+.step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: white; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-body { flex: 1; }
+.step-body strong { font-size: 13.5px; font-weight: 600; display: block; margin-bottom: 4px; }
+.step-body p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.bookmarklet-wrap { margin: 6px 0 4px; }
+.bookmarklet-btn {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: grab;
+  border: 2px dashed rgba(255,255,255,.4);
+  transition: background .15s;
+  user-select: none;
+}
+.bookmarklet-btn:hover { background: #a93226; }
+.drag-hint { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 6px; letter-spacing: .5px; }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+.how-it-works { background: #f5f0eb; border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.how-label { font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.how-label::before { content: ''; width: 14px; height: 2px; background: var(--accent); display: inline-block; }
+.how-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.how-list li { font-size: 13px; color: #555; display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
+.how-list li::before { content: '→'; color: var(--accent); font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+
+.note { margin-top: 20px; font-size: 12px; color: var(--muted); line-height: 1.6; text-align: center; }
+.note a { color: var(--navy); text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-mark">O</div>
+    <span class="logo-name">Orbit</span>
+  </div>
+
+  <h1>One-click job capture</h1>
+  <p class="subtitle">Add this bookmarklet to your browser. Whenever you're on a LinkedIn job page, click it and the job details fill in automatically.</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Drag this button to your bookmarks bar</strong>
+      <div class="bookmarklet-wrap">
+        <a class="bookmarklet-btn" id="bookmarklet-link" href="#placeholder" title="Orbit — Log Job">
+          + Log to Orbit
+        </a>
+      </div>
+      <p class="drag-hint">Drag the red button above into your browser bookmarks bar</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Go to any LinkedIn job page</strong>
+      <p>Open a job listing on LinkedIn. It works on both the job detail page and Easy Apply pages.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Click "Log to Orbit" in your bookmarks bar</strong>
+      <p>A small popup appears pre-filled with the company name, role, and today's date. Review, add any notes, and save.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="how-it-works">
+    <div class="how-label">What it does</div>
+    <ul class="how-list">
+      <li>Reads the job title and company name from the page</li>
+      <li>Also works on Indeed, Naukri, Glassdoor, and most job sites</li>
+      <li>Opens a small popup where you can add status, source, and notes</li>
+      <li>Saves directly to your Firestore — appears on the board instantly</li>
+      <li>No install, no extension, no login needed in the popup</li>
+    </ul>
+  </div>
+
+  <p class="note">
+    The bookmarklet uses your existing Firebase session from Orbit.<br>
+    Make sure you're signed into Orbit in another tab before using it.
+  </p>
+</div>
+
+<script>
+  // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────────────
+  const CONFIG = {
+    apiKey:            "AIzaSyCXBMHFGdvg71XyK_ZF7D_CRbj0Qlfj7EQ",
+    authDomain:        "job-tracker-7cce4.firebaseapp.com",
+    projectId:         "job-tracker-7cce4",
+    storageBucket:     "job-tracker-7cce4.firebasestorage.app",
+    messagingSenderId: "1024683525386",
+    appId:             "1:1024683525386:web:6b851af911f1587a80a6f3"
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Build the bookmarklet code with the config baked in
+  const bookmarkletCode = `(function(){
+    var cfg=${JSON.stringify(CONFIG)};
+    var title=document.title||'';
+    var url=location.href;
+
+    // Extract company + role from LinkedIn page
+    var company='';
+    var role='';
+
+    // LinkedIn job page selectors
+    var roleEl=document.querySelector('.job-details-jobs-unified-top-card__job-title h1')
+      ||document.querySelector('h1.t-24')
+      ||document.querySelector('h1.job-title')
+      ||document.querySelector('[data-test-job-name]')
+      ||document.querySelector('h1');
+    if(roleEl) role=roleEl.innerText.trim();
+
+    var compEl=document.querySelector('.job-details-jobs-unified-top-card__company-name a')
+      ||document.querySelector('.job-details-jobs-unified-top-card__company-name')
+      ||document.querySelector('.topcard__org-name-link')
+      ||document.querySelector('[data-test-employer-name]')
+      ||document.querySelector('.jobs-unified-top-card__company-name a')
+      ||document.querySelector('.jobs-unified-top-card__company-name');
+    if(compEl) company=compEl.innerText.trim();
+
+    // Fallback: parse page title (e.g. "Instructional Designer at Coursera")
+    if(!role||!company){
+      var m=title.match(/^(.+?)\s+(?:at|@)\s+(.+?)(?:\s*[\|\-]|$)/i);
+      if(m){role=role||m[1].trim();company=company||m[2].trim();}
+    }
+
+    // Detect source from URL
+    var source='Other';
+    if(url.includes('linkedin.com'))  source='LinkedIn';
+    else if(url.includes('indeed.com'))   source='Job Board';
+    else if(url.includes('naukri.com'))   source='Job Board';
+    else if(url.includes('glassdoor'))    source='Job Board';
+    else if(url.includes('instahyre'))    source='Job Board';
+
+    var today=new Date().toISOString().slice(0,10);
+
+    // Build popup HTML
+    var html='<html><head><title>Log to Orbit</title>'
+      +'<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel=stylesheet>'
+      +'<style>'
+      +'*{box-sizing:border-box;margin:0;padding:0}'
+      +'body{font-family:DM Sans,sans-serif;background:#f5f0eb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}'
+      +'.card{background:#fff;border:1px solid #e0d8d0;border-radius:14px;padding:24px;width:100%;max-width:400px;box-shadow:0 12px 40px rgba(30,58,95,.12)}'
+      +'.logo{display:flex;align-items:center;gap:8px;margin-bottom:18px}'
+      +'.lm{width:28px;height:28px;background:#1e3a5f;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:Playfair Display,serif;font-style:italic;font-weight:700;font-size:12px;color:#fff}'
+      +'.ln{font-family:Playfair Display,serif;font-style:italic;font-size:16px;font-weight:700;color:#1a1a1a}'
+      +'label{font-family:JetBrains Mono,monospace;font-size:8.5px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:#888;display:block;margin-bottom:4px}'
+      +'.field{margin-bottom:12px}'
+      +'input,select,textarea{width:100%;background:#f5f0eb;border:1px solid #e0d8d0;border-radius:7px;padding:8px 10px;font-family:DM Sans,sans-serif;font-size:13px;color:#1a1a1a;outline:none}'
+      +'input:focus,select:focus,textarea:focus{border-color:#1e3a5f;box-shadow:0 0 0 3px rgba(30,58,95,.08)}'
+      +'textarea{resize:vertical;min-height:60px}'
+      +'.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}'
+      +'.actions{display:flex;gap:8px;margin-top:16px}'
+      +'.btn-save{flex:1;background:#1e3a5f;color:#fff;border:none;padding:10px;border-radius:7px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:600;cursor:pointer}'
+      +'.btn-save:hover{background:#162d4a}'
+      +'.btn-cancel{background:#f0ebe4;color:#888;border:1px solid #e0d8d0;padding:10px 14px;border-radius:7px;font-family:DM Sans,sans-serif;font-size:13px;cursor:pointer}'
+      +'.msg{font-size:12px;color:#888;margin-top:10px;text-align:center;min-height:16px}'
+      +'.msg.ok{color:#2d7a2d;font-weight:500}'
+      +'.msg.err{color:#c0392b}'
+      +'</style></head><body>'
+      +'<div class=card>'
+      +'<div class=logo><div class=lm>O</div><span class=ln>Orbit</span></div>'
+      +'<div class=field><label>Company</label><input id=co value="'+company.replace(/"/g,"&quot;")+'"></div>'
+      +'<div class=field><label>Role</label><input id=ro value="'+role.replace(/"/g,"&quot;")+'"></div>'
+      +'<div class=row>'
+      +'<div class=field><label>Date Applied</label><input type=date id=da value="'+today+'"></div>'
+      +'<div class=field><label>Status</label><select id=st><option>Applied</option><option>Interview</option><option>Offer</option></select></div>'
+      +'</div>'
+      +'<div class=row>'
+      +'<div class=field><label>Source</label><select id=so><option>LinkedIn</option><option>Company Website</option><option>Referral</option><option>Job Board</option><option>Recruiter</option><option>Other</option></select></div>'
+      +'<div class=field><label>Contact Name</label><input id=cn placeholder="Recruiter name"></div>'
+      +'</div>'
+      +'<div class=field><label>Notes</label><textarea id=no placeholder="Next steps, referral info..."></textarea></div>'
+      +'<div class=actions>'
+      +'<button class=btn-cancel onclick="window.close()">Cancel</button>'
+      +'<button class=btn-save onclick="save()">Save to Orbit</button>'
+      +'</div>'
+      +'<div class=msg id=msg></div>'
+      +'</div>'
+      +'<script>'
+      +'var cfg='+JSON.stringify(CONFIG)+';'
+      +'document.getElementById("so").value="'+source+'";'
+      +'async function save(){'
+      +'var btn=document.querySelector(".btn-save");'
+      +'btn.disabled=true;btn.textContent="Saving...";'
+      +'var msg=document.getElementById("msg");'
+      +'try{'
+      +'var token=null;'
+      +'var uidKey=Object.keys(localStorage).find(k=>k.includes("firebase:authUser"));'
+      +'if(!uidKey){msg.className="msg err";msg.textContent="Sign into Orbit first, then try again.";btn.disabled=false;btn.textContent="Save to Orbit";return;}'
+      +'var user=JSON.parse(localStorage[uidKey]);'
+      +'var uid=user.uid;'
+      +'var r=await fetch("https://securetoken.googleapis.com/v1/token?key="+cfg.apiKey,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"grant_type=refresh_token&refresh_token="+user.stsTokenManager.refreshToken});'
+      +'var t=await r.json();token=t.id_token;'
+      +'var data={company:document.getElementById("co").value.trim(),role:document.getElementById("ro").value.trim(),dateApplied:document.getElementById("da").value,status:document.getElementById("st").value,source:document.getElementById("so").value,contact:document.getElementById("cn").value.trim(),notes:document.getElementById("no").value.trim(),uid:uid,createdAt:{".sv":"timestamp"}};'
+      +'var resp=await fetch("https://firestore.googleapis.com/v1/projects/"+cfg.projectId+"/databases/(default)/documents/applications",{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({fields:{company:{stringValue:data.company},role:{stringValue:data.role},dateApplied:{stringValue:data.dateApplied},status:{stringValue:data.status},source:{stringValue:data.source},contact:{stringValue:data.contact},notes:{stringValue:data.notes},uid:{stringValue:data.uid}}})});'
+      +'if(resp.ok){msg.className="msg ok";msg.textContent="Saved to Orbit!";setTimeout(()=>window.close(),1200);}'
+      +'else{var e=await resp.json();msg.className="msg err";msg.textContent="Error: "+(e.error&&e.error.message||"Save failed");btn.disabled=false;btn.textContent="Save to Orbit";}'
+      +'}catch(e){msg.className="msg err";msg.textContent="Error: "+e.message;btn.disabled=false;btn.textContent="Save to Orbit";}'
+      +'}'
+      +'<\/script></body></html>';
+
+    var w=window.open('','OrbitLog','width=440,height=560,resizable=yes');
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  })();`;
+
+  const encoded = 'javascript:' + encodeURIComponent(bookmarkletCode);
+  document.getElementById('bookmarklet-link').href = encoded;
+</script>
+</body>
+</html>

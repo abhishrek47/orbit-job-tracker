@@ -342,9 +342,105 @@
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       closeModal();
+      closeQuickCapture();
       document.getElementById("confirm-overlay").style.display = "none";
     }
+    // Press Q to open quick capture (when not typing in a field)
+    if (e.key === "q" || e.key === "Q") {
+      const tag = document.activeElement.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") {
+        e.preventDefault();
+        openQuickCapture();
+      }
+    }
   });
+
+  // ── QUICK CAPTURE ─────────────────────────────────────────────────────────
+  function openQuickCapture() {
+    document.getElementById("qc-overlay").style.display = "flex";
+    document.getElementById("qc-url").value = "";
+    document.getElementById("qc-company").value = "";
+    document.getElementById("qc-role").value = "";
+    document.getElementById("qc-source").value = "LinkedIn";
+    document.getElementById("qc-result").style.display = "none";
+    setTimeout(() => document.getElementById("qc-url").focus(), 100);
+  }
+
+  function closeQuickCapture() {
+    document.getElementById("qc-overlay").style.display = "none";
+  }
+
+  function parseJobURL() {
+    const url   = document.getElementById("qc-url").value.trim();
+    const result = document.getElementById("qc-result");
+    if (!url) return;
+
+    let company = "", role = "", source = "Other";
+
+    // Detect source
+    if (url.includes("linkedin.com"))   source = "LinkedIn";
+    else if (url.includes("indeed.com"))source = "Job Board";
+    else if (url.includes("naukri.com"))source = "Job Board";
+    else if (url.includes("glassdoor")) source = "Job Board";
+    else if (url.includes("instahyre")) source = "Job Board";
+
+    // LinkedIn URL: /jobs/view/ROLE-at-COMPANY-ID or /jobs/collections/...
+    try {
+      const u    = new URL(url);
+      const path = u.pathname;
+
+      // Pattern: /jobs/view/senior-instructional-designer-at-coursera-3849201/
+      const viewMatch = path.match(/\/jobs\/view\/(.+?)(?:\/|\?|$)/);
+      if (viewMatch) {
+        const slug = viewMatch[1];
+        // Remove trailing job ID numbers
+        const cleaned = slug.replace(/-\d+$/, "").replace(/-+/g, " ");
+        // Split on " at " to get role and company
+        const atIdx = cleaned.lastIndexOf(" at ");
+        if (atIdx > -1) {
+          role    = toTitleCase(cleaned.slice(0, atIdx).trim());
+          company = toTitleCase(cleaned.slice(atIdx + 4).trim());
+        } else {
+          role = toTitleCase(cleaned.trim());
+        }
+      }
+    } catch(e) {}
+
+    document.getElementById("qc-company").value = company;
+    document.getElementById("qc-role").value    = role;
+    document.getElementById("qc-source").value  = source;
+    result.style.display = "block";
+
+    if (!company && !role) {
+      document.getElementById("qc-hint").textContent = "Could not extract details from this URL. Fill in manually below.";
+    } else {
+      document.getElementById("qc-hint").textContent = "Extracted from URL. Edit if needed, then save.";
+    }
+  }
+
+  function toTitleCase(str) {
+    return str.replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  async function saveQuickCapture() {
+    const company = document.getElementById("qc-company").value.trim();
+    const role    = document.getElementById("qc-role").value.trim();
+    if (!company || !role) { showToast("Company and Role are required", "error"); return; }
+    const btn = document.getElementById("qc-save-btn");
+    btn.disabled = true; btn.textContent = "Saving...";
+    await addApplication({
+      company, role,
+      dateApplied: new Date().toISOString().slice(0,10),
+      status:      document.getElementById("qc-status").value,
+      source:      document.getElementById("qc-source").value,
+      contact:     "",
+      followUp:    "",
+      notes:       document.getElementById("qc-url").value.trim()
+    });
+    closeQuickCapture();
+    showToast("Application added");
+    btn.disabled = false; btn.textContent = "Save to Orbit";
+  }
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -504,7 +600,27 @@ section { margin-bottom: 32px; }
 .btn-danger { background: rgba(192,57,43,.08); color: var(--accent); border: 1px solid rgba(192,57,43,.2); padding: 9px 15px; border-radius: 7px; font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; margin-right: auto; transition: all .15s; display: none; align-items: center; }
 .btn-danger:hover { background: rgba(192,57,43,.15); }
 
-/* CONFIRM */
+/* QUICK CAPTURE */
+#qc-overlay { display: none; position: fixed; inset: 0; background: rgba(22,45,74,.45); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .15s ease; }
+.qc-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 460px; box-shadow: 0 24px 60px rgba(30,58,95,.2); animation: slideUp .2s ease; }
+.qc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.qc-header h3 { font-family: var(--font-head); font-size: 17px; font-weight: 700; color: var(--text); }
+.qc-badge { font-family: var(--font-mono); font-size: 9px; background: var(--navy); color: white; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px; }
+.qc-label { font-family: var(--font-mono); font-size: 9px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 5px; }
+.qc-url-wrap { display: flex; gap: 8px; margin-bottom: 6px; }
+.qc-url-wrap input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 9px 11px; color: var(--text); font-family: var(--font-body); font-size: 13px; outline: none; }
+.qc-url-wrap input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,58,95,.08); }
+.btn-parse { background: var(--navy); color: white; border: none; padding: 9px 16px; border-radius: 7px; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.btn-parse:hover { background: var(--navy-dark); }
+.qc-hint { font-size: 11.5px; color: var(--muted); margin-bottom: 14px; min-height: 16px; }
+.qc-result { display: none; }
+.qc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.qc-field { display: flex; flex-direction: column; gap: 5px; }
+.qc-field.full { grid-column: 1 / -1; }
+.qc-field input, .qc-field select { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; color: var(--text); font-family: var(--font-body); font-size: 13px; outline: none; width: 100%; }
+.qc-field input:focus, .qc-field select:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,58,95,.08); }
+.qc-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+.qc-shortcut-tip { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-align: center; margin-top: 10px; }
 #confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(22,45,74,.5); backdrop-filter: blur(6px); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
 .confirm-box { background: var(--surface); border: 1px solid rgba(192,57,43,.25); border-radius: 14px; padding: 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 24px 60px rgba(30,58,95,.2); }
 .confirm-box h4 { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
@@ -569,6 +685,13 @@ section { margin-bottom: 32px; }
           <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
         Export CSV
+      </button>
+      <button class="btn-export" onclick="openQuickCapture()" title="Quick capture from URL (press Q)">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        Quick Add
       </button>
       <button class="btn-add" onclick="openAddModal()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -696,6 +819,72 @@ section { margin-bottom: 32px; }
       <button class="btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn-primary" onclick="saveModal()">Save Application</button>
     </div>
+  </div>
+</div>
+
+<!-- QUICK CAPTURE -->
+<div id="qc-overlay" onclick="if(event.target===this) closeQuickCapture()">
+  <div class="qc-modal">
+    <div class="qc-header">
+      <h3>Quick Add from URL</h3>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="qc-badge">PRESS Q</span>
+        <button class="btn-close" onclick="closeQuickCapture()">✕</button>
+      </div>
+    </div>
+
+    <label class="qc-label">Paste LinkedIn or job page URL</label>
+    <div class="qc-url-wrap">
+      <input type="url" id="qc-url" placeholder="https://www.linkedin.com/jobs/view/..."
+             onkeydown="if(event.key==='Enter') parseJobURL()">
+      <button class="btn-parse" onclick="parseJobURL()">Extract</button>
+    </div>
+    <p class="qc-hint" id="qc-hint">Paste a LinkedIn job URL and click Extract, or fill in manually below.</p>
+
+    <div class="qc-result" id="qc-result">
+      <div class="qc-row">
+        <div class="qc-field full">
+          <label class="qc-label">Company</label>
+          <input type="text" id="qc-company" placeholder="e.g. Coursera">
+        </div>
+        <div class="qc-field full">
+          <label class="qc-label">Role</label>
+          <input type="text" id="qc-role" placeholder="e.g. Instructional Designer">
+        </div>
+      </div>
+      <div class="qc-row">
+        <div class="qc-field">
+          <label class="qc-label">Source</label>
+          <select id="qc-source">
+            <option>LinkedIn</option>
+            <option>Company Website</option>
+            <option>Referral</option>
+            <option>Job Board</option>
+            <option>Recruiter</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="qc-field">
+          <label class="qc-label">Status</label>
+          <select id="qc-status">
+            <option>Applied</option>
+            <option>Interview</option>
+          </select>
+        </div>
+      </div>
+      <div class="qc-actions">
+        <button class="btn-secondary" onclick="closeQuickCapture()">Cancel</button>
+        <button class="btn-primary" id="qc-save-btn" onclick="saveQuickCapture()">Save to Orbit</button>
+      </div>
+    </div>
+
+    <div id="qc-manual-trigger" style="margin-top:12px;text-align:center;">
+      <button class="btn-secondary" style="font-size:12px;" onclick="document.getElementById('qc-result').style.display='block';document.getElementById('qc-manual-trigger').style.display='none';document.getElementById('qc-company').focus()">
+        Fill in manually instead
+      </button>
+    </div>
+
+    <p class="qc-shortcut-tip">The URL is saved as a note on the card for reference.</p>
   </div>
 </div>
 

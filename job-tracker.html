@@ -370,33 +370,31 @@
     document.getElementById("qc-overlay").style.display = "none";
   }
 
-  function parseJobURL() {
-    const url   = document.getElementById("qc-url").value.trim();
+  async function parseJobURL() {
+    const url    = document.getElementById("qc-url").value.trim();
     const result = document.getElementById("qc-result");
+    const hint   = document.getElementById("qc-hint");
+    const btn    = document.querySelector(".btn-parse");
     if (!url) return;
 
     let company = "", role = "", source = "Other";
 
     // Detect source
-    if (url.includes("linkedin.com"))   source = "LinkedIn";
-    else if (url.includes("indeed.com"))source = "Job Board";
-    else if (url.includes("naukri.com"))source = "Job Board";
-    else if (url.includes("glassdoor")) source = "Job Board";
-    else if (url.includes("instahyre")) source = "Job Board";
+    if (url.includes("linkedin.com"))    source = "LinkedIn";
+    else if (url.includes("indeed.com")) source = "Job Board";
+    else if (url.includes("naukri.com")) source = "Job Board";
+    else if (url.includes("glassdoor"))  source = "Job Board";
+    else if (url.includes("instahyre"))  source = "Job Board";
 
-    // LinkedIn URL: /jobs/view/ROLE-at-COMPANY-ID or /jobs/collections/...
+    // Try slug parsing first (some LinkedIn URLs still have text slugs)
     try {
       const u    = new URL(url);
       const path = u.pathname;
-
-      // Pattern: /jobs/view/senior-instructional-designer-at-coursera-3849201/
-      const viewMatch = path.match(/\/jobs\/view\/(.+?)(?:\/|\?|$)/);
+      const viewMatch = path.match(/\/jobs\/view\/([a-zA-Z].+?)(?:\/|\?|$)/);
       if (viewMatch) {
-        const slug = viewMatch[1];
-        // Remove trailing job ID numbers
+        const slug    = viewMatch[1];
         const cleaned = slug.replace(/-\d+$/, "").replace(/-+/g, " ");
-        // Split on " at " to get role and company
-        const atIdx = cleaned.lastIndexOf(" at ");
+        const atIdx   = cleaned.lastIndexOf(" at ");
         if (atIdx > -1) {
           role    = toTitleCase(cleaned.slice(0, atIdx).trim());
           company = toTitleCase(cleaned.slice(atIdx + 4).trim());
@@ -406,15 +404,68 @@
       }
     } catch(e) {}
 
+    // If slug gave us nothing, fetch the page title via a CORS proxy
+    if (!company && !role) {
+      btn.textContent = "Fetching...";
+      btn.disabled    = true;
+      hint.textContent = "Fetching job details...";
+      try {
+        const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+        const resp     = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+        const data     = await resp.json();
+        const html     = data.contents || "";
+
+        // Extract <title> tag
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (titleMatch) {
+          const rawTitle = titleMatch[1].replace(/&amp;/g,"&").replace(/&#039;/g,"'").replace(/&quot;/g,'"').trim();
+
+          // LinkedIn title format: "Job title at Company | LinkedIn" or "Company hiring Job title"
+          let m;
+          m = rawTitle.match(/^(.+?)\s+(?:at|@)\s+(.+?)(?:\s*[\|\-]|$)/i);
+          if (m) { role = m[1].trim(); company = m[2].trim(); }
+
+          if (!role) {
+            m = rawTitle.match(/^(.+?)\s+hiring\s+(.+?)(?:\s*[\|\-]|$)/i);
+            if (m) { company = m[1].trim(); role = m[2].trim(); }
+          }
+
+          // Strip " | LinkedIn" or " - LinkedIn" suffix from company
+          company = company.replace(/\s*[\|\-]\s*LinkedIn.*$/i, "").trim();
+          role    = role.replace(/\s*[\|\-]\s*LinkedIn.*$/i, "").trim();
+        }
+
+        // Also try og:title meta tag as fallback
+        if (!role) {
+          const ogMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+                       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+          if (ogMatch) {
+            const og = ogMatch[1].trim();
+            const m2 = og.match(/^(.+?)\s+(?:at|@)\s+(.+?)(?:\s*[\|\-]|$)/i);
+            if (m2) { role = m2[1].trim(); company = m2[2].trim(); }
+          }
+        }
+      } catch(e) {
+        hint.textContent = "Could not fetch page details. Fill in manually below.";
+      }
+      btn.textContent = "Extract";
+      btn.disabled    = false;
+    }
+
     document.getElementById("qc-company").value = company;
     document.getElementById("qc-role").value    = role;
     document.getElementById("qc-source").value  = source;
     result.style.display = "block";
+    document.getElementById("qc-manual-trigger").style.display = "none";
 
     if (!company && !role) {
-      document.getElementById("qc-hint").textContent = "Could not extract details from this URL. Fill in manually below.";
+      hint.textContent = "Could not extract details. Fill in manually below.";
+    } else if (!company || !role) {
+      hint.textContent = "Partially extracted. Please fill in the missing field.";
+      if (!company) setTimeout(() => document.getElementById("qc-company").focus(), 50);
+      else          setTimeout(() => document.getElementById("qc-role").focus(), 50);
     } else {
-      document.getElementById("qc-hint").textContent = "Extracted from URL. Edit if needed, then save.";
+      hint.textContent = "Extracted. Edit if needed, then save.";
     }
   }
 

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Orbit — Import LinkedIn Jobs</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+  body { font-family: sans-serif; background: #0d0f14; color: #e8eaf0; display: flex;
+         align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .box { background: #161921; border: 1px solid #252a38; border-radius: 16px;
+         padding: 40px; max-width: 540px; width: 90%; text-align: center; }
+  h2 { font-size: 22px; margin-bottom: 8px; }
+  p  { color: #7a8099; font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+  button { background: #6c8fff; color: white; border: none; padding: 14px 32px;
+           border-radius: 10px; font-size: 15px; cursor: pointer; width: 100%; margin-bottom: 12px; }
+  button:hover { background: #5a7de8; }
+  button:disabled { background: #333; color: #666; cursor: not-allowed; }
+  #log { text-align: left; margin-top: 20px; background: #0d0f14; border-radius: 10px;
+         padding: 16px; font-size: 13px; font-family: monospace; max-height: 320px;
+         overflow-y: auto; display: none; line-height: 1.8; }
+  .ok  { color: #10b981; }
+  .err { color: #ef4444; }
+  .inf { color: #6c8fff; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>📥 Import LinkedIn Applications</h2>
+  <p>This will push all 33 of your LinkedIn applications into Firestore.<br>
+     Sign in with the same Google account you use for Orbit, then click Import.</p>
+  <button id="btn-signin" onclick="doSignIn()">Sign in with Google</button>
+  <button id="btn-import" onclick="doImport()" disabled>Import 33 Applications</button>
+  <div id="log"></div>
+</div>
+
+<script>
+  // ── PASTE YOUR SAME firebaseConfig HERE ──────────────────────────────────
+  const firebaseConfig = {
+  apiKey: "AIzaSyCXBMHFGdvg71XyK_ZF7D_CRbj0Qlfj7EQ",
+  authDomain: "job-tracker-7cce4.firebaseapp.com",
+  projectId: "job-tracker-7cce4",
+  storageBucket: "job-tracker-7cce4.firebasestorage.app",
+  messagingSenderId: "1024683525386",
+  appId: "1:1024683525386:web:6b851af911f1587a80a6f3",
+  measurementId: "G-70KSX1TPLJ"
+};
+  // ─────────────────────────────────────────────────────────────────────────
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  let currentUser = null;
+
+  auth.onAuthStateChanged(u => {
+    currentUser = u;
+    if (u) {
+      document.getElementById("btn-signin").textContent = "✓ Signed in as " + u.displayName;
+      document.getElementById("btn-signin").disabled = true;
+      document.getElementById("btn-import").disabled = false;
+      log("inf", "Signed in as " + u.displayName + " (" + u.email + ")");
+    }
+  });
+
+  function doSignIn() {
+    auth.signInWithPopup(provider).catch(e => log("err", "Sign-in error: " + e.message));
+  }
+
+  // ── 33 applications extracted from your LinkedIn screenshots ─────────────
+  // Dates calculated back from today: March 27, 2026
+  const jobs = [
+    { company: "Aims Digital LLC",               role: "Instructional Designer",                                              dateApplied: "2026-03-13", status: "Applied", notes: "Resume downloaded. No longer accepting applications." },
+    { company: "Academian Inc",                   role: "Instructional Design Manager",                                        dateApplied: "2026-02-27", status: "Applied", notes: "No longer accepting applications." },
+    { company: "Onit India",                      role: "Learning & Engagement Associate",                                     dateApplied: "2026-03-06", status: "Applied", notes: "Reposted 1w ago." },
+    { company: "WNS",                             role: "Lead Associate - Process Training (eLearning Developer)",              dateApplied: "2026-03-20", status: "Applied", notes: "Posted 2w ago." },
+    { company: "Kinaxis",                         role: "Instructional Designer",                                              dateApplied: "2026-03-20", status: "Applied", notes: "No longer accepting applications." },
+    { company: "RAeroLMS",                        role: "Learning Content Developer – Aviation Modules",                       dateApplied: "2026-03-20", status: "Applied", notes: "No longer accepting applications." },
+    { company: "Persistent Systems",              role: "Instructional Designer",                                              dateApplied: "2026-02-27", status: "Applied", notes: "No longer accepting applications." },
+    { company: "Vertiv",                          role: "Instructional Design Senior Analyst",                                  dateApplied: "2026-03-20", status: "Applied", notes: "Posted 2w ago." },
+    { company: "Infopro Learning",                role: "Learning Experience Architect",                                       dateApplied: "2026-03-13", status: "Applied", notes: "Posted 3w ago." },
+    { company: "WNS",                             role: "Lead Associate - Process Training (eLearning Developer) - Nashik/Pune",dateApplied: "2026-02-27", status: "Applied", notes: "No longer accepting applications." },
+    { company: "Parallel Learning",               role: "E-Learning Content Developer – Articulate",                           dateApplied: "2026-03-06", status: "Applied", notes: "No longer accepting applications." },
+    { company: "Mount Talent Consulting Pvt Ltd", role: "Senior Instructional Designer",                                       dateApplied: "2026-01-27", status: "Applied", notes: "Bengaluru Hybrid." },
+    { company: "EPAM Systems",                    role: "Consultant, Workforce Experience Consulting",                         dateApplied: "2026-02-27", status: "Applied", notes: "Resume downloaded. No longer accepting applications." },
+    { company: "Jobgether",                       role: "Instructional Designer & LMS Administrator",                          dateApplied: "2026-02-27", status: "Applied", notes: "India Remote." },
+    { company: "Precisely International Jobs",    role: "Senior Learning and Development Specialist",                          dateApplied: "2026-01-27", status: "Applied", notes: "India Remote. No longer accepting applications." },
+    { company: "Icertis",                         role: "Lead Instructional Designer",                                         dateApplied: "2026-02-27", status: "Applied", notes: "Application viewed." },
+    { company: "EduCraftX",                       role: "Storyline Developer / e-Content Developer",                           dateApplied: "2026-01-27", status: "Applied", notes: "Resume downloaded. India Remote." },
+    { company: "METRO Global Solution Center IN", role: "eLearning Developer",                                                 dateApplied: "2025-12-27", status: "Applied", notes: "Pune Division On-site." },
+    { company: "WNS",                             role: "Deputy Manager - Process Training (eLearning Developer/Articulate Storyline/) - Pune", dateApplied: "2025-12-27", status: "Applied", notes: "No longer accepting applications." },
+    { company: "TresVista",                       role: "Associate (Instructional Designer) - Learning and Development",       dateApplied: "2025-12-27", status: "Applied", notes: "Pune Hybrid. No longer accepting applications." },
+    { company: "Emeritus",                        role: "Instructional Designer",                                              dateApplied: "2025-10-27", status: "Applied", notes: "India Remote. No longer accepting applications." },
+    { company: "ELSA, Corp",                      role: "Senior Instructional Designer",                                       dateApplied: "2025-09-27", status: "Applied", notes: "APAC Remote. No longer accepting applications." },
+    { company: "Infopro Learning",                role: "Graphic Designer (E-learning)",                                       dateApplied: "2025-09-27", status: "Applied", notes: "Pune District On-site. No longer accepting applications." },
+    { company: "Emeritus",                        role: "Learning Solutions Manager",                                          dateApplied: "2025-09-27", status: "Applied", notes: "India Remote. No longer accepting applications." },
+    { company: "WNS",                             role: "Deputy Manager - Process Training (eLearning Developer/Articulate Storyline/) - Pune", dateApplied: "2025-09-27", status: "Applied", notes: "Pune/Pimpri-Chinchwad. No longer accepting applications." },
+    { company: "WNS",                             role: "Deputy Manager - Process Training (eLearning Developer) - Pune",      dateApplied: "2025-07-27", status: "Applied", notes: "Pune District On-site. No longer accepting applications." },
+    // ── Batch 2 — saved/in-progress applications (Mar 27, 2026) ─────────────
+    { company: "Amazon",                          role: "Learning Experience Designer, GAR Academy",                           dateApplied: "2026-03-22", status: "Applied", notes: "Pune/Pimpri-Chinchwad Area. Reposted 5d ago." },
+    { company: "Kinaxis",                         role: "Curriculum Developer",                                                dateApplied: "2026-03-20", status: "Applied", notes: "Pune Division Remote. Reposted 1w ago." },
+    { company: "Cornerstone OnDemand",            role: "Learning & Development Manager - India",                              dateApplied: "2026-03-20", status: "Applied", notes: "Pune Division Hybrid. Reposted 1w ago." },
+    { company: "Tricentis",                       role: "Instructional Designer",                                              dateApplied: "2026-03-20", status: "Applied", notes: "Pune District Hybrid. Reposted 1w ago." },
+    { company: "CrelioHealth",                    role: "Instructional Designer – Digital Learning",                           dateApplied: "2026-03-13", status: "Applied", notes: "Pune Division On-site. Posted 2w ago." },
+    { company: "Coursera",                        role: "Learning Designer",                                                   dateApplied: "2026-03-06", status: "Applied", notes: "New Delhi Remote. Reposted 3w ago." },
+    { company: "DWF",                             role: "Instructional Designer and E-Learning Developer",                     dateApplied: "2026-02-27", status: "Applied", notes: "Pune Division On-site. Posted 1mo ago." },
+  ];
+
+  async function doImport() {
+    if (!currentUser) { log("err", "Please sign in first."); return; }
+    const btn = document.getElementById("btn-import");
+    btn.disabled = true;
+    btn.textContent = "Importing…";
+    document.getElementById("log").style.display = "block";
+    log("inf", "Starting import of " + jobs.length + " applications…");
+
+    let ok = 0, fail = 0;
+    for (const job of jobs) {
+      try {
+        await db.collection("applications").add({
+          ...job,
+          uid: currentUser.uid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        log("ok", "✓ " + job.company + " — " + job.role);
+        ok++;
+      } catch(e) {
+        log("err", "✗ " + job.company + ": " + e.message);
+        fail++;
+      }
+    }
+
+    log("inf", "─────────────────────────────────");
+    log("inf", `Done! ${ok} imported, ${fail} failed.`);
+    log("inf", "You can close this tab and open Orbit.");
+    btn.textContent = "✓ Import complete — " + ok + " jobs added!";
+  }
+
+  function log(type, msg) {
+    const el = document.getElementById("log");
+    el.style.display = "block";
+    el.innerHTML += `<div class="${type}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
+</script>
+</body>
+</html>

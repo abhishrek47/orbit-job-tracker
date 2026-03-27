@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Orbit — Remove Duplicates</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #f5f0eb;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .box {
+    background: white;
+    border: 1px solid #e0d8d0;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 620px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(30,58,95,.08);
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .logo {
+    width: 38px; height: 38px;
+    background: #1e3a5f;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+  }
+  h2 { font-family: Georgia, serif; font-size: 20px; font-weight: 700; color: #1a1a1a; }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 28px; margin-top: 4px; line-height: 1.5; }
+
+  .step {
+    background: #f5f0eb;
+    border: 1px solid #e0d8d0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: #1e3a5f;
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 13px; color: #555; line-height: 1.5; }
+  .step-text strong { color: #1a1a1a; }
+
+  button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    margin-top: 10px;
+  }
+  #btn-signin  { background: #1e3a5f; color: white; }
+  #btn-signin:hover  { background: #162d4a; }
+  #btn-signin:disabled { background: #e0d8d0; color: #888; cursor: default; }
+
+  #btn-scan    { background: #f5f0eb; color: #1a1a1a; border: 1px solid #e0d8d0; }
+  #btn-scan:hover    { background: #e0d8d0; }
+  #btn-scan:disabled { opacity: .5; cursor: default; }
+
+  #btn-delete  { background: #c0392b; color: white; display: none; }
+  #btn-delete:hover  { background: #e74c3c; }
+  #btn-delete:disabled { background: #e0d8d0; color: #888; cursor: default; }
+
+  #log {
+    margin-top: 20px;
+    background: #1e3a5f;
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    max-height: 340px;
+    overflow-y: auto;
+    display: none;
+    line-height: 2;
+  }
+  .ok   { color: #6ee7b7; }
+  .err  { color: #fca5a5; }
+  .inf  { color: #93c5fd; }
+  .warn { color: #fcd34d; }
+  .dup  { color: #fcd34d; }
+  .kept { color: #6ee7b7; }
+  .del  { color: #fca5a5; }
+
+  .summary {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: #f0ebe4;
+    border: 1px solid #e0d8d0;
+    border-radius: 10px;
+    font-size: 13px;
+    display: none;
+    line-height: 1.8;
+  }
+  .summary strong { color: #c0392b; }
+  .divider { border: none; border-top: 1px solid #e0d8d0; margin: 20px 0; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="box">
+  <div class="header">
+    <div class="logo">O</div>
+    <h2>Remove Duplicate Applications</h2>
+  </div>
+  <p class="subtitle">
+    Scans your Firestore for duplicate entries (same company + role),
+    keeps the most recent one, and permanently deletes the rest.
+  </p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-text"><strong>Sign in</strong> with the same Google account you use for Orbit.</div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-text"><strong>Scan</strong> — finds all duplicates and shows you what will be removed.</div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-text"><strong>Confirm delete</strong> — only runs after you review. This cannot be undone.</div>
+  </div>
+
+  <hr class="divider">
+
+  <button id="btn-signin" onclick="doSignIn()">Sign in with Google</button>
+  <button id="btn-scan"   onclick="doScan()"   disabled>Scan for Duplicates</button>
+  <button id="btn-delete" onclick="doDelete()">Delete Duplicates Now</button>
+
+  <div class="summary" id="summary"></div>
+  <div id="log"></div>
+</div>
+
+<script>
+  // ── PASTE YOUR SAME firebaseConfig HERE ──────────────────────────────────
+ const firebaseConfig = {
+  apiKey: "AIzaSyCXBMHFGdvg71XyK_ZF7D_CRbj0Qlfj7EQ",
+  authDomain: "job-tracker-7cce4.firebaseapp.com",
+  projectId: "job-tracker-7cce4",
+  storageBucket: "job-tracker-7cce4.firebasestorage.app",
+  messagingSenderId: "1024683525386",
+  appId: "1:1024683525386:web:6b851af911f1587a80a6f3",
+  measurementId: "G-70KSX1TPLJ"
+};
+  // ─────────────────────────────────────────────────────────────────────────
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  let currentUser  = null;
+  let toDeleteIds  = [];   // ids confirmed for deletion after scan
+
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  auth.onAuthStateChanged(u => {
+    currentUser = u;
+    if (u) {
+      document.getElementById("btn-signin").textContent = "✓ Signed in as " + u.displayName;
+      document.getElementById("btn-signin").disabled = true;
+      document.getElementById("btn-scan").disabled   = false;
+      log("inf", "Signed in as " + u.email);
+    }
+  });
+
+  function doSignIn() {
+    auth.signInWithPopup(provider).catch(e => log("err", e.message));
+  }
+
+  // ── SCAN ──────────────────────────────────────────────────────────────────
+  async function doScan() {
+    if (!currentUser) return;
+    toDeleteIds = [];
+    document.getElementById("btn-delete").style.display = "none";
+    document.getElementById("summary").style.display    = "none";
+    document.getElementById("btn-scan").disabled = true;
+    document.getElementById("btn-scan").textContent = "Scanning…";
+    showLog();
+    log("inf", "Fetching all applications for " + currentUser.email + "…");
+
+    let snap;
+    try {
+      snap = await db.collection("applications")
+        .where("uid", "==", currentUser.uid)
+        .get();
+    } catch(e) {
+      log("err", "Fetch failed: " + e.message);
+      document.getElementById("btn-scan").disabled = false;
+      document.getElementById("btn-scan").textContent = "Scan for Duplicates";
+      return;
+    }
+
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    log("inf", "Total records found: " + all.length);
+
+    // Group by lowercase "company|role" key
+    const groups = {};
+    for (const app of all) {
+      const key = (app.company || "").toLowerCase().trim()
+        + "|" + (app.role || "").toLowerCase().trim();
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(app);
+    }
+
+    let dupGroups = 0;
+    let totalDups = 0;
+
+    for (const [key, group] of Object.entries(groups)) {
+      if (group.length < 2) continue;
+      dupGroups++;
+
+      // Sort: entries with a real createdAt timestamp first (most recent = keep)
+      group.sort((a, b) => {
+        const ta = a.createdAt?.toMillis?.() ?? 0;
+        const tb = b.createdAt?.toMillis?.() ?? 0;
+        return tb - ta;
+      });
+
+      const keep = group[0];
+      const dupes = group.slice(1);
+
+      const [company, role] = key.split("|");
+      log("dup", `⚠ Duplicate (×${group.length}): ${keep.company} — ${keep.role}`);
+      log("kept", `  ✓ Keep:   ${keep.id}`);
+      for (const d of dupes) {
+        log("del", `  ✕ Delete: ${d.id}`);
+        toDeleteIds.push(d.id);
+      }
+      totalDups += dupes.length;
+    }
+
+    log("inf", "─────────────────────────────────────────────");
+    if (totalDups === 0) {
+      log("ok", "✓ No duplicates found. Your tracker is clean!");
+      document.getElementById("summary").style.display = "block";
+      document.getElementById("summary").innerHTML =
+        "✅ <strong>No duplicates found.</strong> All " + all.length + " records are unique.";
+    } else {
+      log("warn", `Found ${totalDups} duplicate(s) across ${dupGroups} job(s) to remove.`);
+      const s = document.getElementById("summary");
+      s.style.display = "block";
+      s.innerHTML = `Found <strong>${totalDups} duplicate record${totalDups > 1 ? "s" : ""}</strong> across <strong>${dupGroups} job${dupGroups > 1 ? "s" : ""}</strong>.<br>
+        The most recent entry for each job will be kept. Review the log above, then confirm deletion below.`;
+      const btn = document.getElementById("btn-delete");
+      btn.style.display = "block";
+      btn.textContent   = `Delete ${totalDups} Duplicate${totalDups > 1 ? "s" : ""} →`;
+    }
+
+    document.getElementById("btn-scan").disabled = false;
+    document.getElementById("btn-scan").textContent = "Re-scan";
+  }
+
+  // ── DELETE ────────────────────────────────────────────────────────────────
+  async function doDelete() {
+    if (!toDeleteIds.length) return;
+    const btn = document.getElementById("btn-delete");
+    btn.disabled = true;
+    btn.textContent = "Deleting…";
+    log("inf", "Starting deletion of " + toDeleteIds.length + " record(s)…");
+
+    let ok = 0, fail = 0;
+    // Firestore batch max = 500 ops; chunk if needed
+    const chunks = [];
+    for (let i = 0; i < toDeleteIds.length; i += 400) {
+      chunks.push(toDeleteIds.slice(i, i + 400));
+    }
+
+    for (const chunk of chunks) {
+      const batch = db.batch();
+      for (const id of chunk) {
+        batch.delete(db.collection("applications").doc(id));
+      }
+      try {
+        await batch.commit();
+        ok += chunk.length;
+        log("ok", `✓ Deleted batch of ${chunk.length} record(s).`);
+      } catch(e) {
+        fail += chunk.length;
+        log("err", "Batch delete failed: " + e.message);
+      }
+    }
+
+    log("inf", "─────────────────────────────────────────────");
+    log("ok",  `✓ Done! ${ok} duplicate(s) removed, ${fail} failed.`);
+    log("inf", "You can close this tab and refresh Orbit.");
+
+    const s = document.getElementById("summary");
+    s.innerHTML = `✅ <strong>${ok} duplicate${ok > 1 ? "s" : ""} deleted.</strong> Your tracker is now clean. Close this tab and refresh Orbit.`;
+    btn.textContent = "✓ Done";
+    toDeleteIds = [];
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  function showLog() {
+    document.getElementById("log").style.display = "block";
+  }
+
+  function log(type, msg) {
+    const el = document.getElementById("log");
+    el.style.display = "block";
+    const line = document.createElement("div");
+    line.className = type;
+    line.textContent = msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Orbit — Import 6 Gmail Jobs (April 2026)</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f0eb; --surface: #fff; --navy: #1e3a5f; --navy-dark: #162d4a;
+  --border: #e0d8d0; --text: #1a1a1a; --muted: #888; --accent: #c0392b;
+  --font-head: 'Playfair Display', serif; --font-body: 'DM Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+}
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
+.box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; max-width: 640px; width: 100%; box-shadow: 0 8px 32px rgba(30,58,95,.08); }
+.header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.logo { width: 38px; height: 38px; background: var(--navy); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-style: italic; font-weight: 700; font-size: 16px; color: white; }
+h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); }
+.subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; margin-top: 4px; line-height: 1.6; }
+.source-tag { display: inline-block; font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; background: rgba(30,58,95,.08); color: var(--navy); padding: 2px 7px; border-radius: 4px; margin-bottom: 18px; }
+
+/* Jobs preview table */
+.jobs-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12.5px; }
+.jobs-table th { font-family: var(--font-mono); font-size: 8.5px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.jobs-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.jobs-table tr:last-child td { border-bottom: none; }
+.jobs-table tr:hover td { background: #faf8f5; }
+.company { font-weight: 600; color: var(--text); }
+.role { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.date { font-family: var(--font-mono); font-size: 10px; color: var(--muted); white-space: nowrap; }
+.badge { display: inline-block; font-family: var(--font-mono); font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+.badge-applied { background: rgba(30,58,95,.1); color: var(--navy); }
+.badge-interview { background: rgba(180,83,9,.1); color: #b45309; }
+.source-li { background: rgba(10,102,194,.08); color: #0a66c2; }
+.source-direct { background: rgba(192,57,43,.08); color: var(--accent); }
+.source-co { background: rgba(45,122,45,.08); color: #2d7a2d; }
+
+button { width: 100%; padding: 13px; border: none; border-radius: 8px; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; margin-top: 4px; }
+#btn-signin { background: var(--navy); color: white; }
+#btn-signin:hover { background: var(--navy-dark); }
+#btn-signin:disabled { background: var(--border); color: var(--muted); cursor: default; }
+#btn-import { background: var(--accent); color: white; margin-top: 10px; }
+#btn-import:hover { background: #e74c3c; }
+#btn-import:disabled { background: var(--border); color: var(--muted); cursor: default; }
+
+#log { margin-top: 20px; background: var(--navy); border-radius: 10px; padding: 16px 18px; font-family: var(--font-mono); font-size: 12px; max-height: 280px; overflow-y: auto; display: none; line-height: 2; }
+.ok { color: #6ee7b7; } .err { color: #fca5a5; } .inf { color: #93c5fd; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.6; text-align: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="header">
+    <div class="logo">O</div>
+    <h2>Import 6 Jobs from Gmail</h2>
+  </div>
+  <p class="subtitle">Sourced from your inbox — April 2–8, 2026. Sign in with the same Google account as Orbit, then import.</p>
+  <span class="source-tag">Gmail scan · 30 Mar – 9 Apr 2026</span>
+
+  <table class="jobs-table">
+    <thead>
+      <tr>
+        <th>Company / Role</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><div class="company">UKG</div><div class="role">Lead Talent Development Manager</div></td>
+        <td class="date">8 Apr 2026</td>
+        <td><span class="badge badge-applied">Applied</span></td>
+        <td><span class="badge source-co">Company</span></td>
+      </tr>
+      <tr>
+        <td><div class="company">Capgemini</div><div class="role">FBS Learning and Development Consultant</div></td>
+        <td class="date">7 Apr 2026</td>
+        <td><span class="badge badge-applied">Applied</span></td>
+        <td><span class="badge source-li">LinkedIn</span></td>
+      </tr>
+      <tr>
+        <td><div class="company">Accenture</div><div class="role">T&O Instructional Design (Assoc. Manager / Manager)</div></td>
+        <td class="date">7 Apr 2026</td>
+        <td><span class="badge badge-applied">Applied</span></td>
+        <td><span class="badge source-direct">Direct Email</span></td>
+      </tr>
+      <tr>
+        <td><div class="company">Entrata</div><div class="role">Senior Learning and Development Partner</div></td>
+        <td class="date">6 Apr 2026</td>
+        <td><span class="badge badge-interview">Interview</span></td>
+        <td><span class="badge source-li">LinkedIn</span></td>
+      </tr>
+      <tr>
+        <td><div class="company">edari</div><div class="role">eLearning Specialist</div></td>
+        <td class="date">3 Apr 2026</td>
+        <td><span class="badge badge-applied">Applied</span></td>
+        <td><span class="badge source-li">LinkedIn</span></td>
+      </tr>
+      <tr>
+        <td><div class="company">Recorded Future</div><div class="role">Senior Learning Experience Designer</div></td>
+        <td class="date">2 Apr 2026</td>
+        <td><span class="badge badge-applied">Applied</span></td>
+        <td><span class="badge source-co">Company</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="divider">
+
+  <button id="btn-signin" onclick="doSignIn()">Sign in with Google</button>
+  <button id="btn-import" onclick="doImport()" disabled>Import 6 Applications to Orbit</button>
+  <div id="log"></div>
+  <p class="note">Already signed into Orbit in another tab? The sign-in here is separate — you still need to sign in once in this tab.</p>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCXBMHFGdvg71XyK_ZF7D_CRbj0Qlfj7EQ",
+    authDomain: "job-tracker-7cce4.firebaseapp.com",
+    projectId: "job-tracker-7cce4",
+    storageBucket: "job-tracker-7cce4.firebasestorage.app",
+    messagingSenderId: "1024683525386",
+    appId: "1:1024683525386:web:6b851af911f1587a80a6f3"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+  const provider = new firebase.auth.GoogleAuthProvider();
+  let currentUser = null;
+
+  auth.onAuthStateChanged(u => {
+    currentUser = u;
+    if (u) {
+      document.getElementById("btn-signin").textContent = "✓ Signed in as " + u.displayName;
+      document.getElementById("btn-signin").disabled = true;
+      document.getElementById("btn-import").disabled = false;
+      log("inf", "Signed in as " + u.email);
+    }
+  });
+
+  function doSignIn() {
+    auth.signInWithPopup(provider).catch(e => log("err", "Sign-in error: " + e.message));
+  }
+
+  const jobs = [
+    {
+      company: "UKG",
+      role: "Lead Talent Development Manager",
+      dateApplied: "2026-04-08",
+      status: "Applied",
+      source: "Company Website",
+      contact: "",
+      notes: "Auto-confirmation from careers@talent.ukg.com. Ref: LEADT017677."
+    },
+    {
+      company: "Capgemini",
+      role: "FBS Learning and Development Consultant",
+      dateApplied: "2026-04-07",
+      status: "Applied",
+      source: "LinkedIn",
+      contact: "",
+      notes: "Applied via LinkedIn. Pune Division."
+    },
+    {
+      company: "Accenture",
+      role: "T&O Instructional Design (Associate Manager / Manager)",
+      dateApplied: "2026-04-07",
+      status: "Applied",
+      source: "Recruiter",
+      contact: "Apparao Keerthi",
+      notes: "Direct email to apparao.keerthi@accenture.com. T&O ID openings, Pune. Resume attached. Target 30-35 LPA."
+    },
+    {
+      company: "Entrata",
+      role: "Senior Learning and Development Partner",
+      dateApplied: "2026-04-06",
+      status: "Interview",
+      source: "LinkedIn",
+      contact: "Akansha Ambadkar",
+      notes: "Application confirmed via Lever. Recruiter call from Akansha Ambadkar scheduled this week (Round 1). Hybrid Pune. Shalakah Gangal (TA India Lead) referred to recruiter."
+    },
+    {
+      company: "edari",
+      role: "eLearning Specialist",
+      dateApplied: "2026-04-03",
+      status: "Applied",
+      source: "LinkedIn",
+      contact: "",
+      notes: "Applied via LinkedIn. India. LinkedIn Job ID: 4394646594."
+    },
+    {
+      company: "Recorded Future",
+      role: "Senior Learning Experience Designer",
+      dateApplied: "2026-04-02",
+      status: "Applied",
+      source: "Company Website",
+      contact: "",
+      notes: "Application confirmed via Greenhouse (no-reply@us.greenhouse-mail.io). Strong title match."
+    }
+  ];
+
+  async function doImport() {
+    if (!currentUser) { log("err", "Please sign in first."); return; }
+    const btn = document.getElementById("btn-import");
+    btn.disabled = true;
+    btn.textContent = "Importing…";
+    document.getElementById("log").style.display = "block";
+    log("inf", "Starting import of " + jobs.length + " applications…");
+
+    let ok = 0, fail = 0;
+    for (const job of jobs) {
+      try {
+        await db.collection("applications").add({
+          ...job,
+          uid: currentUser.uid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        log("ok", "✓ " + job.company + " — " + job.role);
+        ok++;
+      } catch(e) {
+        log("err", "✗ " + job.company + ": " + e.message);
+        fail++;
+      }
+    }
+
+    log("inf", "─────────────────────────────────────────");
+    log("inf", "Done! " + ok + " imported, " + fail + " failed.");
+    log("inf", "Close this tab and refresh Orbit to see them.");
+    btn.textContent = "✓ Done — " + ok + " jobs added to Orbit";
+  }
+
+  function log(type, msg) {
+    const el = document.getElementById("log");
+    el.style.display = "block";
+    const line = document.createElement("div");
+    line.className = type;
+    line.textContent = msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+</script>
+</body>
+</html>
